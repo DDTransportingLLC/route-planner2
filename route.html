@@ -849,36 +849,27 @@ button{
      READ URL HASH
   ===================================================== */
 
-  const hash =
-    location.hash;
+ const hash = window.location.hash;
 
+let code = null;
 
-  if(!hash || hash.length < 2){
+if (hash && hash.includes('r=')) {
 
-    showError();
-
-    return;
-
-  }
-
-
-  const params =
-    new URLSearchParams(
-      hash.slice(1)
+    const routePart = hash.substring(
+        hash.indexOf('r=') + 2
     );
 
+    code = routePart.split('&')[0];
 
-  const code =
-    params.get('r');
+}
 
-
-  if(!code){
+if (!code) {
 
     showError();
 
     return;
 
-  }
+}
 
 
 
