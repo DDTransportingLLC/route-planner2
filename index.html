@@ -928,29 +928,72 @@
   });
 
   // ---- Share link ----
-  function encodeRoute(){
-    if (!control) return null;
-    const pts = control.getWaypoints().filter(w=>w.latLng).map(w=>[+w.latLng.lat.toFixed(6), +w.latLng.lng.toFixed(6)]);
-    return btoa(encodeURIComponent(JSON.stringify(pts)));
-  }
-  function decodeRoute(str){
-    try{
-      return JSON.parse(decodeURIComponent(atob(str)));
-    }catch(e){ return null; }
-  }
+ ```js
+// ---- Share link ----
+function encodeRoute(){
+  if (!control) return null;
 
-  shareBtn.addEventListener('click', function(){
-    const code = encodeRoute();
-    if(!code){ return; }
-    const params = 'r=' + code + '&lock=1';
-    const url = location.origin + location.pathname + '#' + params;
-    navigator.clipboard.writeText(url).then(()=>{
-      shareStatus.textContent = 'Link copied — recipients can view but not edit.';
-      setTimeout(()=>{ shareStatus.textContent=''; }, 4000);
-    }).catch(()=>{
-      shareStatus.textContent = url;
+  const pts = control.getWaypoints()
+    .filter(w => w.latLng)
+    .map(w => [
+      +w.latLng.lat.toFixed(6),
+      +w.latLng.lng.toFixed(6)
+    ]);
+
+  if (pts.length < 2) return null;
+
+  // Compact format:
+  // 39.766325,-94.333995;40.079122,-93.522463;...
+  return pts.map(p => p[0] + ',' + p[1]).join(';');
+}
+
+function decodeRoute(str){
+  // New compact format
+  try {
+    const pts = str.split(';').map(pair => {
+      const parts = pair.split(',');
+      if (parts.length !== 2) throw new Error('Invalid point');
+
+      const lat = parseFloat(parts[0]);
+      const lng = parseFloat(parts[1]);
+
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        throw new Error('Invalid coordinates');
+      }
+
+      return [lat, lng];
     });
+
+    if (pts.length >= 2) return pts;
+  } catch(e) {}
+
+  // Backward compatibility:
+  // Still allows previously generated Base64 links to work.
+  try {
+    return JSON.parse(decodeURIComponent(atob(str)));
+  } catch(e) {
+    return null;
+  }
+}
+
+shareBtn.addEventListener('click', function(){
+  const code = encodeRoute();
+  if(!code){ return; }
+
+  const params = 'r=' + code + '&lock=1';
+  const url = location.origin + location.pathname + '#' + params;
+
+  navigator.clipboard.writeText(url).then(()=>{
+    shareStatus.textContent = 'Link copied — recipients can view but not edit.';
+    setTimeout(()=>{
+      shareStatus.textContent='';
+    }, 4000);
+  }).catch(()=>{
+    shareStatus.textContent = url;
   });
+});
+```
+
 
 
   // ---- Route history (saved locally in this browser) ----
