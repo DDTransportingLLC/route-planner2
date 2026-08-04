@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Waypoint — Shared Route</title>
+
+<link rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+<link rel="stylesheet"
+      href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet">
+
+<style>
+
+:root{
+  --ink:#eef1f5;
+  --panel:#ffffff;
+  --panel-2:#f3f5f8;
+  --line:#dde1e8;
+  --amber:#dd8b00;
+  --teal:#0f9c89;
+  --text:#1b1f27;
+  --muted:#6b7280;
+  --danger:#e0463f;
+}
+
+*{
+  box-sizing:border-box;
+}
+
+html,
+body{
+  height:100%;
+  margin:0;
+}
+
+body{
+  font-family:'Space Grotesk',sans-serif;
+  background:var(--ink);
+  color:var(--text);
+  overflow:hidden;
+}
+
+/* =========================
+   MAP
+========================= */
+
+#map{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  background:#e5e9ee;
+}
+
+.leaflet-container{
+  background:#e5e9ee;
+  font-family:'Space Grotesk',sans-serif;
+}
+
+.leaflet-routing-container{
+  display:none !important;
+}
+
+/* =========================
+   MAIN PANEL
+========================= */
+
+#panel{
+  position:absolute;
+  z-index:1000;
+
+  left:18px;
+  top:18px;
+
+  width:330px;
+
+  background:rgba(255,255,255,.97);
+
+  border:1px solid var(--line);
+  border-radius:14px;
+
+  box-shadow:0 8px 28px rgba(0,0,0,.22);
+
+  overflow:hidden;
+}
+
+/* =========================
+   BRAND
+========================= */
+
+#brand{
+  padding:17px 18px 14px;
+  border-bottom:1px solid var(--line);
+}
+
+.mark{
+  display:flex;
+  align-items:center;
+  gap:9px;
+}
+
+.mark svg{
+  flex:none;
+}
+
+h1{
+  font-size:18px;
+  margin:0;
+  font-weight:700;
+}
+
+.subtitle{
+  margin:5px 0 0;
+  color:var(--muted);
+  font-size:11.5px;
+}
+
+/* =========================
+   LOCKED BADGE
+========================= */
+
+#locked{
+  margin:14px 18px 0;
+
+  padding:8px 10px;
+
+  border-radius:7px;
+
+  background:rgba(15,156,137,.1);
+
+  border:1px solid var(--teal);
+
+  color:var(--teal);
+
+  font-size:11px;
+  font-weight:600;
+}
+
+/* =========================
+   STATS
+========================= */
+
+#stats{
+  padding:15px 18px;
+}
+
+.stat{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+
+  margin-bottom:10px;
+}
+
+.stat:last-child{
+  margin-bottom:0;
+}
+
+.label{
+  font-size:10px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+
+.value{
+  font:700 17px 'JetBrains Mono',monospace;
+  color:var(--amber);
+}
+
+/* =========================
+   LEGAL NOTICE
+========================= */
+
+#legal{
+  margin:0 18px 16px;
+
+  padding:11px 12px;
+
+  background:var(--panel-2);
+
+  border-left:3px solid var(--danger);
+
+  border-radius:6px;
+
+  font-size:10.5px;
+  line-height:1.5;
+
+  color:var(--muted);
+}
+
+#legal p{
+  margin:0 0 7px;
+}
+
+#legal p:last-child{
+  margin:0;
+}
+
+/* =========================
+   ACTIONS
+========================= */
+
+#actions{
+  padding:0 18px 17px;
+}
+
+button{
+  width:100%;
+
+  border:0;
+  border-radius:8px;
+
+  padding:11px 12px;
+
+  font:600 12.5px 'Space Grotesk',sans-serif;
+
+  cursor:pointer;
+}
+
+#navBtn{
+  background:var(--teal);
+  color:white;
+}
+
+#navBtn:hover{
+  filter:brightness(1.08);
+}
+
+#navBtn:disabled{
+  background:var(--line);
+  color:var(--muted);
+  cursor:not-allowed;
+}
+
+#status{
+  min-height:15px;
+
+  margin-top:8px;
+
+  text-align:center;
+
+  color:var(--teal);
+
+  font-size:11px;
+}
+
+/* =========================
+   ERROR
+========================= */
+
+#error{
+  display:none;
+
+  position:absolute;
+
+  z-index:2000;
+
+  left:50%;
+  top:50%;
+
+  transform:translate(-50%,-50%);
+
+  width:min(420px,calc(100% - 32px));
+
+  background:#fff;
+
+  border:1px solid var(--line);
+
+  border-radius:12px;
+
+  box-shadow:0 8px 30px rgba(0,0,0,.25);
+
+  padding:22px;
+
+  text-align:center;
+}
+
+#error h2{
+  margin:0 0 8px;
+  font-size:17px;
+}
+
+#error p{
+  margin:0;
+
+  color:var(--muted);
+
+  font-size:12.5px;
+
+  line-height:1.5;
+}
+
+/* =========================
+   ROUTE MARKERS
+========================= */
+
+.waypoint-marker{
+  width:26px;
+  height:26px;
+
+  border-radius:50% 50% 50% 0;
+
+  transform:rotate(-45deg);
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  box-shadow:0 2px 6px rgba(0,0,0,.5);
+
+  border:2px solid rgba(0,0,0,.35);
+}
+
+.waypoint-marker span{
+  transform:rotate(45deg);
+
+  font-size:11px;
+
+  font-weight:700;
+
+  font-family:'JetBrains Mono',monospace;
+
+  color:#1a1206;
+}
+
+.via-marker{
+  width:12px;
+  height:12px;
+
+  border-radius:50%;
+
+  background:var(--text);
+
+  border:2px solid var(--ink);
+
+  box-shadow:0 1px 4px rgba(0,0,0,.6);
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media(max-width:720px){
+
+  #panel{
+    left:10px;
+    right:10px;
+    top:10px;
+
+    width:auto;
+  }
+
+  #brand{
+    padding:13px 15px 11px;
+  }
+
+  #locked{
+    margin:11px 15px 0;
+  }
+
+  #stats{
+    padding:12px 15px;
+  }
+
+  #legal{
+    margin:0 15px 12px;
+  }
+
+  #actions{
+    padding:0 15px 14px;
+  }
+
+  .leaflet-control-zoom a{
+    width:45px;
+    height:45px;
+    line-height:45px;
+    font-size:22px;
+  }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- =========================
+     MAP
+========================= -->
+
+<div id="map"></div>
+
+
+<!-- =========================
+     INFORMATION PANEL
+========================= -->
+
+<div id="panel">
+
+  <div id="brand">
+
+    <div class="mark">
+
+      <svg width="21"
+           height="21"
+           viewBox="0 0 24 24"
+           fill="none">
+
+        <path
+          d="M4 20L10 4L14 14L20 4"
+          stroke="#dd8b00"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+
+        <circle
+          cx="4"
+          cy="20"
+          r="2"
+          fill="#dd8b00"/>
+
+        <circle
+          cx="20"
+          cy="4"
+          r="2"
+          fill="#0f9c89"/>
+
+      </svg>
+
+      <h1>Waypoint</h1>
+
+    </div>
+
+    <p class="subtitle">
+      Shared route · view only
+    </p>
+
+  </div>
+
+
+  <div id="locked">
+    🔒 Route locked — view only
+  </div>
+
+
+  <!-- ROUTE STATS -->
+
+  <div id="stats">
+
+    <div class="stat">
+
+      <span class="label">
+        Distance
+      </span>
+
+      <span
+        class="value"
+        id="distVal">
+        —
+      </span>
+
+    </div>
+
+
+    <div class="stat">
+
+      <span class="label">
+        Est. time
+      </span>
+
+      <span
+        class="value"
+        id="timeVal">
+        —
+      </span>
+
+    </div>
+
+  </div>
+
+
+  <!-- LEGAL NOTICE -->
+
+  <div id="legal">
+
+    <p>
+      Please be advised that the graphical map is provided for
+      reference purposes only and may not fully correspond to the
+      route specified in the permit.
+    </p>
+
+    <p>
+      In case of discrepancies, the written route description
+      contained in the permit shall prevail and is the official
+      and legally binding route.
+    </p>
+
+    <p>
+      Review and follow the written route description before
+      commencing transportation.
+    </p>
+
+  </div>
+
+
+  <!-- NAVIGATION -->
+
+  <div id="actions">
+
+    <button id="navBtn">
+      Start Navigation
+    </button>
+
+    <div id="status"></div>
+
+  </div>
+
+</div>
+
+
+<!-- =========================
+     ERROR MESSAGE
+========================= -->
+
+<div id="error">
+
+  <h2>
+    Route unavailable
+  </h2>
+
+  <p>
+    This link does not contain a valid route.
+    Please ask the sender for a new route link.
+  </p>
+
+</div>
+
+
+<!-- =========================
+     LEAFLET
+========================= -->
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+
+
+<script>
+
+(function(){
+
+  /* =====================================================
+     MAP INITIALIZATION
+  ===================================================== */
+
+  const map = L.map('map', {
+
+    zoomControl:false,
+
+    attributionControl:true
+
+  }).setView(
+    [40.7128,-74.0060],
+    12
+  );
+
+
+  L.control.zoom({
+
+    position:'bottomright'
+
+  }).addTo(map);
+
+
+  L.tileLayer(
+    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {
+
+      attribution:
+        '&copy; OpenStreetMap contributors',
+
+      subdomains:'abc',
+
+      maxZoom:19
+
+    }
+  ).addTo(map);
+
+
+
+  /* =====================================================
+     DOM ELEMENTS
+  ===================================================== */
+
+  const distVal =
+    document.getElementById('distVal');
+
+  const timeVal =
+    document.getElementById('timeVal');
+
+  const navBtn =
+    document.getElementById('navBtn');
+
+  const status =
+    document.getElementById('status');
+
+  const errorBox =
+    document.getElementById('error');
+
+
+  let control = null;
+
+  let driverMarker = null;
+
+  let watchId = null;
+
+
+
+  /* =====================================================
+     MARKER ICONS
+  ===================================================== */
+
+  function pinIcon(label,color){
+
+    return L.divIcon({
+
+      className:'',
+
+      html:
+        '<div class="waypoint-marker" ' +
+        'style="background:'+color+'">' +
+        '<span>'+label+'</span>' +
+        '</div>',
+
+      iconSize:[26,26],
+
+      iconAnchor:[13,26]
+
+    });
+
+  }
+
+
+  function viaIcon(){
+
+    return L.divIcon({
+
+      className:'',
+
+      html:
+        '<div class="via-marker"></div>',
+
+      iconSize:[12,12],
+
+      iconAnchor:[6,6]
+
+    });
+
+  }
+
+
+
+  /* =====================================================
+     DECODE ROUTE
+
+     This is intentionally compatible with the
+     encodeRoute() function in your existing index.html.
+
+     Existing planner:
+
+       btoa(
+         encodeURIComponent(
+           JSON.stringify(points)
+         )
+       )
+
+  ===================================================== */
+
+  function decodeRoute(str){
+
+    try{
+
+      return JSON.parse(
+        decodeURIComponent(
+          atob(str)
+        )
+      );
+
+    }catch(e){
+
+      return null;
+
+    }
+
+  }
+
+
+
+  /* =====================================================
+     SHOW ERROR
+  ===================================================== */
+
+  function showError(){
+
+    document
+      .getElementById('panel')
+      .style.display='none';
+
+    errorBox.style.display='block';
+
+  }
+
+
+
+  /* =====================================================
+     START DRIVER NAVIGATION
+  ===================================================== */
+
+  function startNavigation(){
+
+    if(!navigator.geolocation || !control){
+
+      status.textContent =
+        'GPS unavailable';
+
+      return;
+
+    }
+
+
+    navBtn.textContent =
+      'Navigation Active';
+
+
+    status.textContent =
+      'Waiting for GPS…';
+
+
+    watchId =
+      navigator.geolocation.watchPosition(
+
+        function(pos){
+
+          const latlng =
+            L.latLng(
+              pos.coords.latitude,
+              pos.coords.longitude
+            );
+
+
+          /* CREATE DRIVER MARKER */
+
+          if(!driverMarker){
+
+            driverMarker =
+              L.marker(
+
+                latlng,
+
+                {
+
+                  icon:
+
+                    L.divIcon({
+
+                      className:'',
+
+                      html:
+
+                        '<div style="' +
+                        'background:#1565ff;' +
+                        'width:22px;' +
+                        'height:22px;' +
+                        'border-radius:50%;' +
+                        'border:3px solid white;' +
+                        'box-shadow:0 1px 5px rgba(0,0,0,.45);' +
+                        '"></div>',
+
+                      iconSize:[22,22],
+
+                      iconAnchor:[11,11]
+
+                    })
+
+                }
+
+              ).addTo(map);
+
+
+            driverMarker.setZIndexOffset(1000);
+
+          }
+
+          else{
+
+            driverMarker.setLatLng(latlng);
+
+          }
+
+
+          status.textContent =
+            'Navigation active';
+
+
+          map.panTo(latlng);
+
+        },
+
+        function(){
+
+          status.textContent =
+            'GPS unavailable';
+
+          navBtn.textContent =
+            'Start Navigation';
+
+        },
+
+        {
+
+          enableHighAccuracy:true,
+
+          maximumAge:2000
+
+        }
+
+      );
+
+  }
+
+
+  navBtn.addEventListener(
+    'click',
+    startNavigation
+  );
+
+
+
+  /* =====================================================
+     READ URL HASH
+  ===================================================== */
+
+  const hash =
+    location.hash;
+
+
+  if(!hash || hash.length < 2){
+
+    showError();
+
+    return;
+
+  }
+
+
+  const params =
+    new URLSearchParams(
+      hash.slice(1)
+    );
+
+
+  const code =
+    params.get('r');
+
+
+  if(!code){
+
+    showError();
+
+    return;
+
+  }
+
+
+
+  /* =====================================================
+     DECODE ROUTE POINTS
+  ===================================================== */
+
+  const pts =
+    decodeRoute(code);
+
+
+  if(
+
+    !Array.isArray(pts) ||
+
+    pts.length < 2 ||
+
+    pts.some(function(p){
+
+      return (
+
+        !Array.isArray(p) ||
+
+        p.length < 2 ||
+
+        !Number.isFinite(+p[0]) ||
+
+        !Number.isFinite(+p[1])
+
+      );
+
+    })
+
+  ){
+
+    showError();
+
+    return;
+
+  }
+
+
+
+  /* =====================================================
+     CONVERT TO LEAFLET LATLNG
+  ===================================================== */
+
+  const wps =
+    pts.map(function(p){
+
+      return L.latLng(
+        +p[0],
+        +p[1]
+      );
+
+    });
+
+
+
+  /* =====================================================
+     BUILD VIEW-ONLY ROUTING CONTROL
+  ===================================================== */
+
+  control =
+    L.Routing.control({
+
+      waypoints:wps,
+
+      router:
+        L.Routing.osrmv1({
+
+          serviceUrl:
+            'https://router.project-osrm.org/route/v1'
+
+        }),
+
+
+      routeWhileDragging:false,
+
+      draggableWaypoints:false,
+
+      addWaypoints:false,
+
+      fitSelectedRoutes:true,
+
+      show:false,
+
+
+      lineOptions:{
+
+        styles:[
+
+          {
+            color:'#1b1f27',
+            opacity:.18,
+            weight:9
+          },
+
+          {
+            color:'#1a56db',
+            opacity:.95,
+            weight:5
+          }
+
+        ],
+
+        extendToWaypoints:true,
+
+        missingRouteTolerance:0
+
+      },
+
+
+      createMarker:
+        function(i,wpObj,n){
+
+          /* ORIGIN */
+
+          if(i===0){
+
+            return L.marker(
+
+              wpObj.latLng,
+
+              {
+
+                icon:
+                  pinIcon(
+                    'A',
+                    '#dd8b00'
+                  ),
+
+                interactive:false
+
+              }
+
+            );
+
+          }
+
+
+          /* DESTINATION */
+
+          if(i===n-1){
+
+            return L.marker(
+
+              wpObj.latLng,
+
+              {
+
+                icon:
+                  pinIcon(
+                    'B',
+                    '#0f9c89'
+                  ),
+
+                interactive:false
+
+              }
+
+            );
+
+          }
+
+
+          /* VIA POINT */
+
+          return L.marker(
+
+            wpObj.latLng,
+
+            {
+
+              icon:viaIcon(),
+
+              interactive:false
+
+            }
+
+          );
+
+        }
+
+    }).addTo(map);
+
+
+
+  /* =====================================================
+     ROUTE FOUND
+  ===================================================== */
+
+  control.on(
+    'routesfound',
+    function(e){
+
+      const route =
+        e.routes[0];
+
+
+      const summary =
+        route.summary;
+
+
+      /* DISTANCE */
+
+      distVal.textContent =
+        (
+          summary.totalDistance /
+          1609.34
+        ).toFixed(1) +
+        ' mi';
+
+
+
+      /* TIME */
+
+      const mins =
+        Math.round(
+          summary.totalTime / 60
+        );
+
+
+      if(mins < 60){
+
+        timeVal.textContent =
+          mins + ' min';
+
+      }
+
+      else{
+
+        timeVal.textContent =
+          Math.floor(mins/60) +
+          'h ' +
+          (mins%60) +
+          'm';
+
+      }
+
+
+      status.textContent='';
+
+    }
+  );
+
+
+
+  /* =====================================================
+     ROUTING ERROR
+  ===================================================== */
+
+  control.on(
+    'routingerror',
+    function(){
+
+      status.textContent =
+        'Unable to calculate route';
+
+    }
+  );
+
+
+
+  /* =====================================================
+     IMPORTANT:
+     RESTORE VIA POINTS
+
+     Your existing planner stores all waypoints
+     in the encoded URL.
+
+     The routing control initially receives
+     the complete waypoint array above.
+
+     This delayed call helps Leaflet Routing Machine
+     retain intermediate points after initialization.
+  ===================================================== */
+
+  if(wps.length > 2){
+
+    setTimeout(function(){
+
+      if(control){
+
+        control.setWaypoints(wps);
+
+      }
+
+    },350);
+
+  }
+
+
+})();
+
+</script>
+
+</body>
+</html>
